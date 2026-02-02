@@ -383,7 +383,7 @@ def main():
             
             # Если это просто домен, показываем информационное сообщение
             if '.' in processed_query and len(processed_query.split()) == 1:
-                st.info(f"ℹ️ Домен обнаружен. Приложение автоматически сгенерирует запросы для поиска утечек данных, уязвимостей и обсуждений атак.")
+                st.info("ℹ️ Домен обнаружен. Приложение автоматически сгенерирует запросы для поиска утечек данных, уязвимостей и обсуждений атак.")
             if processed_query.startswith('http://') or processed_query.startswith('https://') or processed_query.startswith('www.'):
                 # Извлекаем домен из URL
                 from urllib.parse import urlparse
