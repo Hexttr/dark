@@ -125,12 +125,34 @@ Search queries:"""
         domain_warning = ""
         if is_domain_query:
             domain_name = query.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].split('?')[0].lower()
+            domain_parts = domain_name.split('.')
+            main_domain = domain_parts[0] if domain_parts else domain_name
+            
             domain_warning = f"""
-CRITICAL: The investigation query is about domain/company "{domain_name}". 
-- REJECT any results about OTHER companies or domains (e.g., if searching for "tcell.tj", REJECT results about "T-mobile", "T-Mobile", "tmobile", or any other company)
-- ACCEPT only results that specifically mention "{domain_name}" or very similar variations
-- Be VERY strict about domain/company name matching - even small differences matter
-- If a result mentions a different company/domain, mark it as irrelevant (relevance_score: 0.0)
+CRITICAL FILTERING RULES - READ CAREFULLY:
+
+The investigation query is about domain/company "{domain_name}" (main part: "{main_domain}").
+
+STRICT REJECTION RULES:
+- REJECT any results about "T-Mobile", "T-mobile", "tmobile", "T Mobile", "Tmobile" - these are DIFFERENT companies
+- REJECT any results about "T-Mobile USA", "T-Mobile US" - these are DIFFERENT companies  
+- REJECT any results that mention "mobile" or "telecom" companies UNLESS they specifically mention "{domain_name}" or "{main_domain}"
+- REJECT any results about other .tj domains (Tajikistan domains) UNLESS they mention "{domain_name}"
+- REJECT any results that are about telecommunications companies in general
+
+STRICT ACCEPTANCE RULES:
+- ACCEPT only results that specifically mention "{domain_name}" (exact match)
+- ACCEPT only results that mention "{main_domain}" in the context of "{domain_name}"
+- ACCEPT only results where the domain/company name matches EXACTLY or with very minor variations (like "tcell" vs "t-cell" but NOT "T-Mobile")
+
+EXAMPLES:
+- Query: "tcell.tj"
+  ✅ ACCEPT: "tcell.tj data breach", "tcell credentials leak", "tcell.tj customer data"
+  ❌ REJECT: "T-Mobile data breach", "tmobile leak", "T-Mobile USA breach", "mobile telecom breach"
+
+If a result mentions a DIFFERENT company/domain (like T-Mobile when searching for tcell.tj), it MUST be marked as irrelevant with relevance_score: 0.0 and NOT included in relevant_results.
+
+ONLY include results in relevant_results if they are about "{domain_name}" or "{main_domain}" specifically.
 """
         
         return f"""You are analyzing search results for a legitimate OSINT (Open Source Intelligence) security investigation. This is a professional security research task focused on threat intelligence and security awareness.
@@ -149,11 +171,14 @@ Analyze these results and:
 
 This is a legitimate security investigation. Focus on identifying security-related information, threat intelligence, and data that could help improve security posture.
 
-IMPORTANT FILTERING RULES:
-- If the query is about a specific domain/company, results MUST mention that exact domain/company
-- Reject results about similar-sounding but different companies (e.g., "tcell" vs "T-mobile")
-- Relevance score should be HIGH (0.7+) only for results that directly match the query domain/company
-- Relevance score should be LOW (0.0-0.3) for results about different companies/domains
+IMPORTANT FILTERING RULES - STRICT ENFORCEMENT:
+- If the query is about a specific domain/company, results MUST mention that EXACT domain/company
+- REJECT results about similar-sounding but DIFFERENT companies (e.g., "tcell.tj" vs "T-Mobile" - these are COMPLETELY DIFFERENT)
+- Relevance score should be HIGH (0.7+) ONLY for results that directly match the query domain/company
+- Relevance score should be 0.0 (ZERO) for results about DIFFERENT companies/domains - DO NOT include them in relevant_results
+- If you find results about T-Mobile when searching for tcell.tj, they MUST be rejected (relevance_score: 0.0) and NOT included
+
+CRITICAL: Do NOT confuse domain names. "tcell.tj" and "T-Mobile" are COMPLETELY DIFFERENT companies in DIFFERENT countries. They have NOTHING in common except both being telecom companies. This is NOT a match.
 
 Return a JSON object with this structure:
 {{

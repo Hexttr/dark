@@ -203,6 +203,34 @@ class OllamaClient:
                         "summary": response[:500] if isinstance(response, str) else "Analysis completed"
                     }
                 
+                # Дополнительная проверка: фильтруем результаты, которые не соответствуют запросу
+                relevant_results = parsed.get('relevant_results', [])
+                filtered_relevant = []
+                
+                # Если запрос о домене, проверяем каждое упоминание
+                if '.' in query and len(query.split()) <= 2:
+                    domain_name = query.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].split('?')[0].lower()
+                    domain_main = domain_name.split('.')[0]
+                    
+                    for result in relevant_results:
+                        title = result.get('title', '').lower()
+                        url = result.get('url', '').lower()
+                        findings = result.get('key_findings', '').lower()
+                        
+                        # Проверяем, упоминается ли наш домен
+                        if (domain_name in title or domain_name in url or domain_name in findings or
+                            domain_main in title or domain_main in url or domain_main in findings):
+                            # Проверяем, что это НЕ другой домен/компания
+                            if 't-mobile' not in title and 'tmobile' not in title and 't mobile' not in title:
+                                filtered_relevant.append(result)
+                            else:
+                                safe_print(f"[LLM] Отклонен результат про T-Mobile: {title[:60]}")
+                        else:
+                            safe_print(f"[LLM] Отклонен результат без упоминания домена: {title[:60]}")
+                    
+                    parsed['relevant_results'] = filtered_relevant
+                    safe_print(f"[LLM] После дополнительной фильтрации: {len(filtered_relevant)} релевантных результатов")
+                
                 safe_print(f"[LLM] Найдено {len(parsed.get('relevant_results', []))} релевантных результатов")
                 return parsed
                 
