@@ -70,6 +70,7 @@ Analysis:"""
 
     @staticmethod
     def generate_investigation_summary(query: str, filtered_results: List[Dict[str, Any]], scraped_content: Dict[str, str]) -> str:
+        """Генерация итогового отчета с анализом упоминаний домена"""
         """Промпт для генерации итогового отчета"""
         results_summary = "\n\n".join([
             f"• {r.get('title', 'N/A')} - {r.get('key_findings', 'N/A')}"
