@@ -33,7 +33,8 @@ class OllamaClient:
         }
         
         try:
-            response = requests.post(url, json=payload, timeout=60)
+            # Увеличиваем таймаут для генерации (LLM может работать долго)
+            response = requests.post(url, json=payload, timeout=180)  # 3 минуты
             response.raise_for_status()
             
             if stream:
