@@ -178,35 +178,92 @@ class OllamaClient:
             return [query_processed]
     
     def filter_results(self, query: str, results: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Фильтрация и анализ результатов поиска"""
+        """Фильтрация и анализ результатов поиска с retry механизмом"""
         if not results:
             return {"relevant_results": [], "summary": "No results to analyze"}
         
         prompt = PromptTemplates.filter_results(query, results)
         
-        safe_print(f"[LLM] Анализ {len(results)} результатов поиска...")
-        response = self._generate(prompt)
+        # Пробуем несколько раз с увеличенным таймаутом
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                if attempt > 0:
+                    safe_print(f"[LLM] Повторная попытка фильтрации ({attempt + 1}/{max_retries})...")
+                
+                safe_print(f"[LLM] Анализ {len(results)} результатов поиска...")
+                response = self._generate(prompt)
+                
+                parsed = ResponseParser.parse_json_response(response)
+                
+                # Если не удалось распарсить JSON, создаем базовую структуру
+                if "relevant_results" not in parsed:
+                    parsed = {
+                        "relevant_results": results[:5],  # Берем первые 5
+                        "summary": response[:500] if isinstance(response, str) else "Analysis completed"
+                    }
+                
+                safe_print(f"[LLM] Найдено {len(parsed.get('relevant_results', []))} релевантных результатов")
+                return parsed
+                
+            except requests.exceptions.Timeout as e:
+                safe_print(f"[LLM] Таймаут при фильтрации (попытка {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    safe_print(f"[LLM] Повторяем попытку...")
+                    continue
+                else:
+                    safe_print(f"[LLM] Все попытки исчерпаны, используем базовую фильтрацию")
+                    break
+            except Exception as e:
+                safe_print(f"[LLM] Ошибка фильтрации: {e}")
+                if attempt < max_retries - 1:
+                    continue
+                break
         
-        parsed = ResponseParser.parse_json_response(response)
-        
-        # Если не удалось распарсить JSON, создаем базовую структуру
-        if "relevant_results" not in parsed:
-            parsed = {
-                "relevant_results": results[:5],  # Берем первые 5
-                "summary": response[:500] if isinstance(response, str) else "Analysis completed"
-            }
-        
-        safe_print(f"[LLM] Найдено {len(parsed.get('relevant_results', []))} релевантных результатов")
-        return parsed
+        # Fallback: возвращаем все результаты как релевантные
+        safe_print(f"[LLM] Используем базовую фильтрацию (первые 10 результатов)")
+        return {
+            'relevant_results': results[:10],
+            'summary': 'Фильтрация не выполнена из-за ошибки LLM, использованы первые результаты'
+        }
     
     def generate_summary(self, query: str, filtered_results: List[Dict[str, Any]], scraped_content: Dict[str, str]) -> str:
-        """Генерация итогового отчета расследования"""
+        """Генерация итогового отчета расследования с retry механизмом"""
         prompt = PromptTemplates.generate_investigation_summary(query, filtered_results, scraped_content)
         
-        safe_print(f"[LLM] Генерация итогового отчета...")
-        response = self._generate(prompt)
+        # Пробуем несколько раз с увеличенным таймаутом
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                if attempt > 0:
+                    safe_print(f"[LLM] Повторная попытка генерации отчета ({attempt + 1}/{max_retries})...")
+                
+                safe_print(f"[LLM] Генерация итогового отчета...")
+                response = self._generate(prompt)
+                
+                if response and len(response.strip()) > 50:
+                    return response
+                else:
+                    safe_print(f"[LLM] Слишком короткий ответ, повторяем...")
+                    continue
+                    
+            except requests.exceptions.Timeout as e:
+                safe_print(f"[LLM] Таймаут при генерации отчета (попытка {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    safe_print(f"[LLM] Повторяем попытку...")
+                    continue
+                else:
+                    safe_print(f"[LLM] Все попытки исчерпаны, используем базовый отчет")
+                    break
+            except Exception as e:
+                safe_print(f"[LLM] Ошибка генерации отчета: {e}")
+                if attempt < max_retries - 1:
+                    continue
+                break
         
-        return response
+        # Fallback: возвращаем базовый отчет
+        safe_print(f"[LLM] Используем базовый отчет")
+        return self._generate_basic_report(query, filtered_results, scraped_content)
     
     def list_models(self) -> List[str]:
         """Получить список доступных моделей Ollama"""
