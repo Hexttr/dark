@@ -109,26 +109,51 @@ Search queries:"""
 
     @staticmethod
     def filter_results(query: str, results: List[Dict[str, Any]]) -> str:
-        """Промпт для фильтрации результатов"""
+        """Промпт для фильтрации результатов с улучшенной проверкой релевантности"""
+        # Извлекаем ключевые слова из запроса
+        query_lower = query.lower()
+        query_keywords = [word.strip() for word in query_lower.split() if len(word.strip()) > 2]
+        
+        # Определяем, является ли запрос доменом
+        is_domain_query = '.' in query and len(query.split()) <= 2
+        
         results_text = "\n\n".join([
             f"Result {i+1}:\nTitle: {r.get('title', 'N/A')}\nURL: {r.get('url', 'N/A')}\nSnippet: {r.get('snippet', 'N/A')[:200]}"
-            for i, r in enumerate(results[:20])  # Ограничиваем для промпта
+            for i, r in enumerate(results[:30])  # Увеличено для лучшей фильтрации
         ])
+        
+        domain_warning = ""
+        if is_domain_query:
+            domain_name = query.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].split('?')[0].lower()
+            domain_warning = f"""
+CRITICAL: The investigation query is about domain/company "{domain_name}". 
+- REJECT any results about OTHER companies or domains (e.g., if searching for "tcell.tj", REJECT results about "T-mobile", "T-Mobile", "tmobile", or any other company)
+- ACCEPT only results that specifically mention "{domain_name}" or very similar variations
+- Be VERY strict about domain/company name matching - even small differences matter
+- If a result mentions a different company/domain, mark it as irrelevant (relevance_score: 0.0)
+"""
         
         return f"""You are analyzing search results for a legitimate OSINT (Open Source Intelligence) security investigation. This is a professional security research task focused on threat intelligence and security awareness.
 
 Original investigation query: {query}
-
+{domain_warning}
 Search results:
 {results_text}
 
 Analyze these results and:
 1. Filter out irrelevant or low-quality results
-2. Identify the most relevant and useful results for security research
-3. Extract key security-related information from each relevant result
-4. Note any potential security threats, data leaks, or important intelligence that could help protect organizations
+2. **STRICTLY check domain/company name matching** - if query is about a specific domain/company, REJECT results about different companies
+3. Identify the most relevant and useful results for security research
+4. Extract key security-related information from each relevant result
+5. Note any potential security threats, data leaks, or important intelligence that could help protect organizations
 
 This is a legitimate security investigation. Focus on identifying security-related information, threat intelligence, and data that could help improve security posture.
+
+IMPORTANT FILTERING RULES:
+- If the query is about a specific domain/company, results MUST mention that exact domain/company
+- Reject results about similar-sounding but different companies (e.g., "tcell" vs "T-mobile")
+- Relevance score should be HIGH (0.7+) only for results that directly match the query domain/company
+- Relevance score should be LOW (0.0-0.3) for results about different companies/domains
 
 Return a JSON object with this structure:
 {{
