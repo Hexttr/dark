@@ -70,12 +70,19 @@ Analysis:"""
 
     @staticmethod
     def generate_investigation_summary(query: str, filtered_results: List[Dict[str, Any]], scraped_content: Dict[str, str]) -> str:
-        """Генерация итогового отчета с анализом упоминаний домена"""
-        """Промпт для генерации итогового отчета"""
+        """Промпт для генерации итогового отчета с анализом упоминаний домена"""
         results_summary = "\n\n".join([
             f"• {r.get('title', 'N/A')} - {r.get('key_findings', 'N/A')}"
             for r in filtered_results
         ])
+        
+        # Подготавливаем скрапленный контент для анализа
+        scraped_text = ""
+        if scraped_content:
+            scraped_text = "\n\n".join([
+                f"URL: {url}\nContent: {content[:1000]}..." 
+                for url, content in list(scraped_content.items())[:10]
+            ])
         
         return f"""You are creating a professional OSINT investigation report.
 
@@ -84,17 +91,25 @@ Investigation Query: {query}
 Relevant Findings:
 {results_summary}
 
-Scraped Content Summary:
-{len(scraped_content)} pages were analyzed.
+Scraped Content from Dark Web Pages:
+{scraped_text if scraped_text else "No content was successfully scraped."}
+
+IMPORTANT: Analyze the scraped content carefully. Look for:
+1. Direct mentions of the domain/company name from the query
+2. References to data breaches, leaks, or compromised data
+3. Mentions of credentials, passwords, or account information
+4. Any security-related information about the target
 
 Create a comprehensive investigation report that includes:
-1. Executive Summary - brief overview of findings
-2. Key Findings - detailed information discovered
-3. Threat Assessment - evaluation of any threats identified
-4. Recommendations - suggested next steps
-5. Sources - list of relevant sources found
+1. Executive Summary - brief overview of findings, specifically noting if the target domain/company was mentioned
+2. Key Findings - detailed information discovered, highlighting any direct mentions of the target
+3. Domain Mentions Analysis - specifically analyze if and where the target domain/company was mentioned in scraped content
+4. Threat Assessment - evaluation of any threats identified
+5. Recommendations - suggested next steps
+6. Sources - list of relevant sources found
 
 Format the report in clear, professional language suitable for security teams or investigators.
+Be specific about what was found and what was NOT found regarding the target domain/company.
 
 Report:"""
 
