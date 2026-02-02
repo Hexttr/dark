@@ -3,6 +3,7 @@
 """
 import json
 import requests
+import requests.exceptions
 from typing import List, Dict, Any, Optional
 from config import Config, safe_print
 from llm_utils import PromptTemplates, ResponseParser
@@ -68,8 +69,8 @@ class OllamaClient:
         }
         
         try:
-            # Уменьшаем таймаут для чат-запросов
-            response = requests.post(url, json=payload, timeout=60)
+            # Увеличиваем таймаут для чат-запросов (LLM может работать долго)
+            response = requests.post(url, json=payload, timeout=180)  # 3 минуты
             response.raise_for_status()
             result = response.json()
             return result.get("message", {}).get("content", "")
