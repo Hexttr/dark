@@ -347,9 +347,16 @@ def main():
         help="⚠️ ВАЖНО: Вводите ключевые слова, а не URL! Приложение ищет информацию в dark web по вашему запросу."
     )
     
-    # Проверка, не введен ли URL
+    # Автоматическое преобразование URL в поисковый запрос
     if query and (query.startswith('http://') or query.startswith('https://') or query.startswith('www.')):
-        st.warning("⚠️ Похоже, вы ввели URL. Приложение работает с поисковыми запросами, а не с прямыми адресами.")
+        # Извлекаем домен из URL
+        domain = query.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].split('?')[0]
+        query = f"domain {domain} credentials leak data breach vulnerability"
+        st.info(f"ℹ️ URL автоматически преобразован в поисковый запрос для кибербезопасности: `{query}`")
+    
+    # Если это просто домен, автоматически добавляем контекст кибербезопасности
+    if query and '.' in query and len(query.split()) == 1 and not query.startswith('http'):
+        st.info(f"ℹ️ Домен обнаружен. Приложение автоматически сгенерирует запросы для поиска утечек данных, уязвимостей и обсуждений атак.")("⚠️ Похоже, вы ввели URL. Приложение работает с поисковыми запросами, а не с прямыми адресами.")
         st.info("💡 **Совет:** Если вы хотите найти информацию о домене, используйте запрос вида: `domain example.com credentials leak` или `example.com data breach`")
     
     # Кнопка по центру и шире
