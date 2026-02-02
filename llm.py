@@ -78,10 +78,19 @@ class OllamaClient:
             raise Exception(f"Ошибка при обращении к Ollama: {e}")
     
     def generate_search_queries(self, original_query: str) -> List[str]:
-        """Генерация оптимизированных поисковых запросов"""
-        prompt = PromptTemplates.generate_search_queries(original_query)
+        """Генерация оптимизированных поисковых запросов для кибербезопасности"""
+        # Предобработка запроса - определяем домен
+        query_processed = original_query.strip()
         
-        safe_print(f"[LLM] Генерация поисковых запросов для: {original_query}")
+        # Если это просто домен без дополнительных слов, добавляем контекст кибербезопасности
+        if '.' in query_processed and len(query_processed.split()) == 1:
+            # Это домен, добавляем базовые запросы для кибербезопасности
+            domain = query_processed.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].split('?')[0]
+            safe_print(f"[LLM] Обнаружен домен: {domain}, генерирую запросы для кибербезопасности...")
+        
+        prompt = PromptTemplates.generate_search_queries(query_processed)
+        
+        safe_print(f"[LLM] Генерация поисковых запросов для: {query_processed}")
         
         try:
             response = self._generate(prompt)
@@ -92,21 +101,79 @@ class OllamaClient:
                 "unable to", "cannot help", "not appropriate",
                 "illegal", "against policy", "not allowed"
             ]):
-                safe_print("[LLM] Модель отказалась генерировать запросы, используем оригинальный запрос")
-                return [original_query]
+                safe_print("[LLM] Модель отказалась генерировать запросы, создаю базовые запросы для кибербезопасности...")
+                # Fallback: создаем базовые запросы
+                if '.' in query_processed and len(query_processed.split()) == 1:
+                    domain = query_processed.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].split('?')[0]
+                    queries = [
+                        f"{domain} data breach credentials leak",
+                        f"{domain} database dump customer data",
+                        f"domain {domain} vulnerability exploit",
+                        f"{domain} password leak database",
+                        f"{domain} stolen credentials accounts",
+                        f"{domain} security breach incident",
+                        f"{domain} compromised data leak",
+                        f"{domain} ransomware attack",
+                        f"{domain} zero-day vulnerability",
+                        f"{domain} phishing campaign",
+                        f"{domain} account credentials sale",
+                        f"{domain} customer data breach"
+                    ]
+                else:
+                    queries = [query_processed]
+                safe_print(f"[LLM] ✅ Создано {len(queries)} базовых запросов для кибербезопасности")
+                return queries[:15]
             
             queries = ResponseParser.parse_search_queries(response)
             
-            # Если не удалось распарсить или модель отказалась, используем оригинальный запрос
+            # Если не удалось распарсить, создаем базовые запросы для кибербезопасности
             if not queries or len(queries) == 0:
-                safe_print("[LLM] Не удалось распарсить ответ, используем оригинальный запрос")
-                queries = [original_query]
+                safe_print("[LLM] Не удалось распарсить ответ, создаю базовые запросы для кибербезопасности...")
+                
+                # Определяем, это домен или обычный запрос
+                if '.' in query_processed and len(query_processed.split()) == 1:
+                    domain = query_processed.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].split('?')[0]
+                    queries = [
+                        f"{domain} data breach credentials leak",
+                        f"{domain} database dump customer data",
+                        f"domain {domain} vulnerability exploit",
+                        f"{domain} password leak database",
+                        f"{domain} stolen credentials accounts",
+                        f"{domain} security breach incident",
+                        f"{domain} compromised data leak",
+                        f"{domain} ransomware attack",
+                        f"{domain} zero-day vulnerability",
+                        f"{domain} phishing campaign",
+                        f"{domain} account credentials sale",
+                        f"{domain} customer data breach"
+                    ]
+                else:
+                    # Для обычных запросов добавляем контекст кибербезопасности
+                    queries = [
+                        f"{query_processed} data breach leak",
+                        f"{query_processed} vulnerability exploit",
+                        f"{query_processed} credentials stolen",
+                        f"{query_processed} security incident",
+                        f"{query_processed} compromised data",
+                        f"{query_processed} attack discussion",
+                        f"{query_processed} database dump",
+                        f"{query_processed} password leak"
+                    ]
             
-            safe_print(f"[LLM] Сгенерировано {len(queries)} поисковых запросов")
-            return queries
+            safe_print(f"[LLM] ✅ Сгенерировано {len(queries)} поисковых запросов для кибербезопасности")
+            return queries[:15]  # Ограничиваем количество
         except Exception as e:
-            safe_print(f"[LLM] Ошибка при генерации запросов: {e}, используем оригинальный запрос")
-            return [original_query]
+            safe_print(f"[LLM] Ошибка генерации запросов: {e}")
+            # Fallback: создаем базовые запросы
+            if '.' in query_processed and len(query_processed.split()) == 1:
+                domain = query_processed.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].split('?')[0]
+                return [
+                    f"{domain} data breach",
+                    f"{domain} credentials leak",
+                    f"{domain} vulnerability",
+                    f"{domain} security breach"
+                ]
+            return [query_processed]
     
     def filter_results(self, query: str, results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Фильтрация и анализ результатов поиска"""

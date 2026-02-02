@@ -374,6 +374,16 @@ def main():
         else:
             # Автоматическое преобразование URL в поисковый запрос
             processed_query = query.strip()
+            
+            # Если это URL, извлекаем домен
+            if processed_query.startswith('http://') or processed_query.startswith('https://') or processed_query.startswith('www.'):
+                domain = processed_query.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].split('?')[0]
+                processed_query = domain
+                st.info(f"ℹ️ URL автоматически преобразован в домен: `{domain}`")
+            
+            # Если это просто домен, показываем информационное сообщение
+            if '.' in processed_query and len(processed_query.split()) == 1:
+                st.info(f"ℹ️ Домен обнаружен. Приложение автоматически сгенерирует запросы для поиска утечек данных, уязвимостей и обсуждений атак.")
             if processed_query.startswith('http://') or processed_query.startswith('https://') or processed_query.startswith('www.'):
                 # Извлекаем домен из URL
                 from urllib.parse import urlparse

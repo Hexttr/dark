@@ -9,22 +9,100 @@ class PromptTemplates:
     
     @staticmethod
     def generate_search_queries(original_query: str) -> str:
-        """Генерация промпта для создания поисковых запросов"""
-        return f"""You are an expert OSINT (Open Source Intelligence) researcher conducting a legitimate security investigation. Your task is to help generate optimized search queries for information gathering purposes.
+        """Генерация промпта для создания поисковых запросов для кибербезопасности"""
+        # Определяем, является ли запрос доменом
+        is_domain = '.' in original_query and ('http' not in original_query.lower() and 'www' not in original_query.lower())
+        domain_name = original_query.strip().replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].split('?')[0]
+        
+        if is_domain:
+            # Если это домен, создаем специальный промпт для кибербезопасности
+            return f"""You are an expert cybersecurity OSINT researcher conducting a legitimate security threat intelligence investigation. Your task is to generate optimized search queries to find security-related information about a domain/company.
 
-This is a legitimate security research and threat intelligence investigation. The goal is to identify potential security threats, data leaks, or security-related information that could help protect organizations and individuals.
+This is a legitimate cybersecurity investigation focused on threat intelligence, vulnerability assessment, and security awareness. The goal is to identify potential security threats, data breaches, vulnerabilities, attack discussions, or compromised data that could help protect the organization.
+
+Target domain/company: {domain_name}
+
+Generate 12-15 optimized search queries specifically focused on cybersecurity threats and security intelligence. The queries should help discover:
+
+1. **Data Breaches & Leaks:**
+   - Database dumps, credential leaks, data breaches
+   - Stolen credentials, passwords, customer data
+   - Compromised accounts, email leaks
+
+2. **Vulnerabilities & Exploits:**
+   - Security vulnerabilities, CVEs, exploits
+   - Zero-day vulnerabilities, security flaws
+   - Attack vectors, exploitation discussions
+
+3. **Attack Discussions & Threats:**
+   - Attack discussions, hacking forums mentions
+   - Ransomware attacks, DDoS discussions
+   - Social engineering campaigns, phishing
+
+4. **Compromised Data:**
+   - Sold/stolen data, database sales
+   - Account credentials for sale
+   - Personal information leaks
+
+5. **Security Incidents:**
+   - Security incidents, breaches reports
+   - Compromised infrastructure discussions
+   - Security research findings
+
+IMPORTANT: Generate queries that are:
+- Specific to cybersecurity threats and security intelligence
+- Use relevant security terminology (breach, leak, exploit, vulnerability, credentials, dump, etc.)
+- Include variations with and without domain name
+- Focus on finding actionable threat intelligence
+- Suitable for dark web search engines
+
+Return ONLY a JSON array of search query strings, nothing else. Example format:
+["{domain_name} data breach credentials leak", "{domain_name} database dump", "domain {domain_name} vulnerability exploit", ...]
+
+Search queries:"""
+        else:
+            # Обычный запрос - улучшенный промпт для кибербезопасности
+            return f"""You are an expert cybersecurity OSINT researcher conducting a legitimate security threat intelligence investigation. Your task is to generate optimized search queries for cybersecurity information gathering.
+
+This is a legitimate cybersecurity investigation focused on threat intelligence, vulnerability assessment, and security awareness. The goal is to identify potential security threats, data breaches, vulnerabilities, attack discussions, or compromised data.
 
 Original investigation query: {original_query}
 
-Generate 10-15 optimized search queries that:
-1. Are specific and targeted to the investigation topic
-2. Use relevant keywords and terminology
-3. Include variations and synonyms to improve search coverage
-4. Are optimized for finding relevant security and intelligence information
+Generate 12-15 optimized search queries specifically focused on cybersecurity threats and security intelligence. The queries should help discover:
 
-Important: Focus on security research, threat intelligence, and legitimate OSINT practices. Generate queries that help identify security-related information, data breaches, or threat intelligence.
+1. **Data Breaches & Leaks:**
+   - Database dumps, credential leaks, data breaches
+   - Stolen credentials, passwords, customer data
+   - Compromised accounts, email leaks
 
-Return ONLY a JSON array of search query strings, nothing else. Generate 10-15 diverse queries with different keywords, synonyms, and search strategies. Example format:
+2. **Vulnerabilities & Exploits:**
+   - Security vulnerabilities, CVEs, exploits
+   - Zero-day vulnerabilities, security flaws
+   - Attack vectors, exploitation discussions
+
+3. **Attack Discussions & Threats:**
+   - Attack discussions, hacking forums mentions
+   - Ransomware attacks, DDoS discussions
+   - Social engineering campaigns, phishing
+
+4. **Compromised Data:**
+   - Sold/stolen data, database sales
+   - Account credentials for sale
+   - Personal information leaks
+
+5. **Security Incidents:**
+   - Security incidents, breaches reports
+   - Compromised infrastructure discussions
+   - Security research findings
+
+IMPORTANT: Generate queries that are:
+- Specific to cybersecurity threats and security intelligence
+- Use relevant security terminology (breach, leak, exploit, vulnerability, credentials, dump, etc.)
+- Include variations and synonyms
+- Focus on finding actionable threat intelligence
+- Suitable for dark web search engines
+
+Return ONLY a JSON array of search query strings, nothing else. Example format:
 ["query 1", "query 2", "query 3", "query 4", "query 5", "query 6", "query 7", "query 8", "query 9", "query 10"]
 
 Search queries:"""
