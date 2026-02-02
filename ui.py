@@ -383,21 +383,6 @@ def main():
             # Если это просто домен, показываем информационное сообщение
             if '.' in processed_query and len(processed_query.split()) == 1:
                 st.info("ℹ️ Домен обнаружен. Приложение автоматически сгенерирует запросы для поиска утечек данных, уязвимостей и обсуждений атак.")
-            if processed_query.startswith('http://') or processed_query.startswith('https://') or processed_query.startswith('www.'):
-                # Извлекаем домен из URL
-                from urllib.parse import urlparse
-                try:
-                    if not processed_query.startswith('http'):
-                        processed_query = 'https://' + processed_query
-                    parsed = urlparse(processed_query)
-                    domain = parsed.netloc or parsed.path.split('/')[0]
-                    domain = domain.replace('www.', '')
-                    # Преобразуем в поисковый запрос
-                    processed_query = f"domain {domain} credentials leak data breach"
-                    st.info(f"🔄 URL преобразован в поисковый запрос: `{processed_query}`")
-                except Exception:
-                    # Если не удалось распарсить, используем как есть
-                    pass
             
             with st.spinner("Выполняется расследование... Это может занять несколько минут."):
                 result = run_investigation_ui(processed_query, selected_model, threads)
