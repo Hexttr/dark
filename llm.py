@@ -265,6 +265,34 @@ class OllamaClient:
         safe_print(f"[LLM] Используем базовый отчет")
         return self._generate_basic_report(query, filtered_results, scraped_content)
     
+    def _generate_basic_report(self, query: str, filtered_results: List[Dict[str, Any]], scraped_content: Dict[str, str]) -> str:
+        """Генерация базового отчета без LLM"""
+        from datetime import datetime
+        
+        results_text = "\n".join([
+            f"- {r.get('title', 'N/A')}: {r.get('url', 'N/A')}"
+            for r in filtered_results[:10]
+        ])
+        
+        return f"""# Отчет расследования
+
+**Запрос:** {query}
+**Дата:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## Найденные результаты
+
+Всего найдено: {len(filtered_results)}
+Скраплено страниц: {len(scraped_content)}
+
+## Релевантные результаты:
+
+{results_text}
+
+## Примечание
+
+Отчет сгенерирован автоматически без использования LLM из-за таймаута.
+"""
+    
     def list_models(self) -> List[str]:
         """Получить список доступных моделей Ollama"""
         try:
